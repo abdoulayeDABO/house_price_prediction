@@ -16,7 +16,11 @@ st.set_page_config(
 # Charger le modèle
 @st.cache_resource
 def get_model():
-    return load_model(os.path.join(BASE_DIR, "models/trained_model.pkl"))
+    model_path = os.path.join(os.path.dirname(__file__), "models/trained_model.pkl")
+    if not os.path.exists(model_path):
+        os.makedirs("models", exist_ok=True)
+        os.system("python train.py")
+    return load_model(model_path)
 
 model = get_model()
 
