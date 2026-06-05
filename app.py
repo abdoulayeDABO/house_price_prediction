@@ -1,11 +1,8 @@
 import streamlit as st
 import pandas as pd
 import os
-import joblib
-from utils import load_model, save_model
+from utils import load_model, train_and_save_model, MODEL_PATH, BASE_DIR
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-MODEL_PATH = os.path.join(BASE_DIR, "models", "trained_model.pkl")
 
 # Config page
 st.set_page_config(
@@ -17,37 +14,8 @@ st.set_page_config(
 @st.cache_resource
 def get_model():
     if not os.path.exists(MODEL_PATH):
-        from sklearn.ensemble import RandomForestRegressor
-        from sklearn.pipeline import Pipeline
-        from sklearn.preprocessing import OneHotEncoder
-        from sklearn.compose import ColumnTransformer
-        from sklearn.impute import SimpleImputer
-        from sklearn.pipeline import Pipeline as SKPipeline
-
         os.makedirs(os.path.join(BASE_DIR, "models"), exist_ok=True)
-
-        df = pd.read_csv(os.path.join(BASE_DIR, "housing.csv"))
-        X = df.drop(columns=["median_house_value"])
-        y = df["median_house_value"]
-
-        numeric_features = ["longitude", "latitude", "housing_median_age",
-                            "total_rooms", "total_bedrooms", "population",
-                            "households", "median_income"]
-        categorical_features = ["ocean_proximity"]
-
-        preprocessor = ColumnTransformer([
-            ("num", SimpleImputer(strategy="median"), numeric_features),
-            ("cat", OneHotEncoder(handle_unknown="ignore"), categorical_features),
-        ])
-
-        model = SKPipeline([
-            ("preprocessor", preprocessor),
-            ("regressor", RandomForestRegressor(n_estimators=100, random_state=42))
-        ])
-
-        model.fit(X, y)
-        save_model(model, MODEL_PATH)
-
+        train_and_save_model()
     return load_model(MODEL_PATH)
 
 model = get_model()
