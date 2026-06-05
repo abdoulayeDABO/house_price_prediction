@@ -1,10 +1,11 @@
 import streamlit as st
 import pandas as pd
-from utils import load_model
 import os
+import joblib
+from utils import load_model
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
+MODEL_PATH = os.path.join(BASE_DIR, "models", "trained_model.pkl")
 
 # Config page
 st.set_page_config(
@@ -13,14 +14,41 @@ st.set_page_config(
     layout="centered"
 )
 
-# Charger le modèle
 @st.cache_resource
 def get_model():
-    model_path = os.path.join(os.path.dirname(__file__), "models/trained_model.pkl")
-    if not os.path.exists(model_path):
-        os.makedirs("models", exist_ok=True)
-        os.system("python train.py")
-    return load_model(model_path)
+    if not os.path.exists(MODEL_PATH):
+        from sklearn.ensemble import RandomForestRegressor
+        from sklearn.pipeline import Pipeline
+        from sklearn.preprocessing import OneHotEncoder
+        from sklearn.compose import ColumnTransformer
+        from sklearn.impute import SimpleImputer
+        from sklearn.pipeline import Pipeline as SKPipeline
+
+        os.makedirs(os.path.join(BASE_DIR, "models"), exist_ok=True)
+
+        df = pd.read_csv(os.path.join(BASE_DIR, "housing.csv"))
+        X = df.drop(columns=["median_house_value"])
+        y = df["median_house_value"]
+
+        numeric_features = ["longitude", "latitude", "housing_median_age",
+                            "total_rooms", "total_bedrooms", "population",
+                            "households", "median_income"]
+        categorical_features = ["ocean_proximity"]
+
+        preprocessor = ColumnTransformer([
+            ("num", SimpleImputer(strategy="median"), numeric_features),
+            ("cat", OneHotEncoder(handle_unknown="ignore"), categorical_features),
+        ])
+
+        model = SKPipeline([
+            ("preprocessor", preprocessor),
+            ("regressor", RandomForestRegressor(n_estimators=100, random_state=42))
+        ])
+
+        model.fit(X, y)
+        joblib.dump(model, MODEL_PATH)
+
+    return load_model(MODEL_PATH)
 
 model = get_model()
 
@@ -30,7 +58,6 @@ st.markdown("Remplis les informations pour estimer le prix d'une maison.")
 
 # Formulaire
 st.subheader("Informations sur la maison")
-
 col1, col2 = st.columns(2)
 
 with col1:
@@ -62,12 +89,9 @@ if st.button("Estimer le prix", use_container_width=True):
         "median_income": median_income,
         "ocean_proximity": ocean_proximity,
     }])
-
     prediction = model.predict(input_data)[0]
-
     st.success(f"### 💰 Prix estimé : ${prediction:,.0f}")
 
-    # Métriques rapides
     st.divider()
     col3, col4, col5 = st.columns(3)
     col3.metric("Prix au m²", f"${prediction/total_rooms:,.0f}")
