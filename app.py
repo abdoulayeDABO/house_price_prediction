@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import os
 import joblib
-from utils import load_model
+from utils import load_model, save_model
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_PATH = os.path.join(BASE_DIR, "models", "trained_model.pkl")
@@ -46,7 +46,7 @@ def get_model():
         ])
 
         model.fit(X, y)
-        joblib.dump(model, MODEL_PATH)
+        save_model(model, MODEL_PATH)
 
     return load_model(MODEL_PATH)
 
