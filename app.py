@@ -1,6 +1,10 @@
 import streamlit as st
 import pandas as pd
 from utils import load_model
+import os
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 
 # Config page
 st.set_page_config(
@@ -12,7 +16,7 @@ st.set_page_config(
 # Charger le modèle
 @st.cache_resource
 def get_model():
-    return load_model("models/trained_model.pkl")
+    return load_model(os.path.join(BASE_DIR, "models/trained_model.pkl"))
 
 model = get_model()
 
